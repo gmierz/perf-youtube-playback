@@ -14,7 +14,7 @@ main() {
   ONE_YEAR="31536000"
 
   CSPSTATIC="\"content-security-policy\": \"default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors: 'none'; object-src 'none'\""
-  CSP="\"content-security-policy\": \"default-src 'none'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'\""
+  CSP="\"content-security-policy\": \"default-src 'none'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://dash-mse-test.appspot.com\""
   HSTS="\"strict-transport-security\": \"max-age=${ONE_YEAR}; includeSubDomains; preload\""
   TYPE="\"x-content-type-options\": \"nosniff\""
   XSS="\"x-xss-protection\": \"1; mode=block\""
@@ -41,10 +41,9 @@ main() {
 
   case "$1" in
     code)
-      if [ ! -d "$CODE_DIR" ]; then
-          echo "Can't find $CODE_DIR/ directory. Are you running"\
-               "from the correct root directory?"
-          exit 1
+      if [ -z "$CODE_DIR" ]; then
+        echo "The CODE_DIR value is not set, unknown branch: '$CIRCLE_BRANCH'."
+        exit 1
       fi
       deploy_code
     ;;
@@ -72,7 +71,7 @@ deploy_code() {
     --metadata "{${CSP}, ${HSTS}, ${TYPE}, ${XSS}, ${REFERRER}}" \
     --metadata-directive "REPLACE" \
     --acl "public-read" \
-    "$CODE_DIR/" "s3://$YTTEST_BUCKET/$CODE_DIR/"
+    "./" "s3://$YTTEST_BUCKET/$CODE_DIR/"
 
   # JS; short cache
   aws s3 sync \
@@ -83,7 +82,7 @@ deploy_code() {
     --metadata "{${CSP}, ${HSTS}, ${TYPE}, ${XSS}, ${REFERRER}}" \
     --metadata-directive "REPLACE" \
     --acl "public-read" \
-    "$CODE_DIR/" "s3://$YTTEST_BUCKET/$CODE_DIR/"
+    "./" "s3://$YTTEST_BUCKET/$CODE_DIR/"
 
   # Everything else; long cache
   aws s3 sync \
@@ -93,7 +92,7 @@ deploy_code() {
     --metadata "{${CSPSTATIC}, ${HSTS}, ${TYPE}, ${XSS}, ${REFERRER}}" \
     --metadata-directive "REPLACE" \
     --acl "public-read" \
-    "$CODE_DIR/" "s3://$YTTEST_BUCKET/$CODE_DIR/"
+    "./" "s3://$YTTEST_BUCKET/$CODE_DIR/"
 }
 
 _download_and_prepare_media_files() {
